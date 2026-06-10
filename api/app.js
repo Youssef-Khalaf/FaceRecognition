@@ -251,47 +251,68 @@ app.post("/compare", (req, res) => {
   // حساب التشابه
   // const similarity = cosineSimilarity(embedding, storedEmbedding);
   // const isMatch = similarity > 0.73;
-  const distance = euclideanDistance(embedding, storedEmbedding);
+  // const distance = euclideanDistance(embedding, storedEmbedding);
+  // تحويل المصفوفات لشكل الـ L2 المعاير قبل الحساب
+  const normalizedSent = l2Normalize(embedding);
+  const normalizedStored = l2Normalize(storedEmbedding);
 
+  // الحساب بعد كده هيكون دقيق جداً وثابت
+  const similarity = cosineSimilarity(normalizedSent, normalizedStored);
+  const isMatch = similarity > 0.73; // الـ Threshold ده كدا هيبقى دقيق جداً
   // العتبة القياسية (Threshold) لموديل FaceNet غالباً تكون بين 0.6 و 0.7
   // لو المسافة أقل من 0.6 يبقى الشخص هو هو بنسبة كبيرة جداً
-  const isMatch = distance < 0.6;
+  // const isMatch = distance < 0.6;
   res.json({
     success: true,
     id: id,
     name: user.name, // حلوة نرجع الاسم كمان للتأكيد
-    distance: distance,
+    similarity: similarity,
     isMatch: isMatch,
   });
 });
 
-// دالة الـ Cosine Similarity
-// function cosineSimilarity(vec1, vec2) {
-//   let dotProduct = 0;
-//   let normA = 0;
-//   let normB = 0;
+// دالة لتطبيق الـ L2 Normalization على المصفوفة
+function l2Normalize(vec) {
+  // 1. حساب المجموع المربع
+  let sumOfSquares = vec.reduce((sum, val) => sum + val * val, 0);
 
-//   for (let i = 0; i < vec1.length; i++) {
-//     dotProduct += vec1[i] * vec2[i];
-//     normA += vec1[i] * vec1[i];
-//     normB += vec2[i] * vec2[i];
+  // 2. أخذ الجذر التربيعي للحصول على الطول (Norm)
+  let norm = Math.sqrt(sumOfSquares);
+
+  // حماية من القسمة على صفر لو المصفوفة كلها أصفار
+  if (norm === 0) return vec;
+
+  // 3. قسمة كل رقم على الطول
+  return vec.map((val) => val / norm);
+}
+
+// دالة الـ Cosine Similarity
+function cosineSimilarity(vec1, vec2) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < vec1.length; i++) {
+    dotProduct += vec1[i] * vec2[i];
+    normA += vec1[i] * vec1[i];
+    normB += vec2[i] * vec2[i];
+  }
+
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+// function euclideanDistance(vec1, vec2) {
+//   if (vec1.length !== vec2.length) {
+//     throw new Error("المصفوفات مش بنفس الطول!");
 //   }
 
-//   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+//   let sum = 0;
+//   for (let i = 0; i < vec1.length; i++) {
+//     let diff = vec1[i] - vec2[i];
+//     sum += diff * diff;
+//   }
+
+//   return Math.sqrt(sum); // إرجاع المسافة الإقليدية
 // }
-function euclideanDistance(vec1, vec2) {
-  if (vec1.length !== vec2.length) {
-    throw new Error("المصفوفات مش بنفس الطول!");
-  }
-
-  let sum = 0;
-  for (let i = 0; i < vec1.length; i++) {
-    let diff = vec1[i] - vec2[i];
-    sum += diff * diff;
-  }
-
-  return Math.sqrt(sum); // إرجاع المسافة الإقليدية
-}
 
 // تشغيل السيرفر (تم نقلها بره الـ API لآخر الملف)
 if (process.env.NODE_ENV !== "production") {
