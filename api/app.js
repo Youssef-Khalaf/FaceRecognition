@@ -249,31 +249,48 @@ app.post("/compare", (req, res) => {
   const storedEmbedding = user.embedding;
 
   // حساب التشابه
-  const similarity = cosineSimilarity(embedding, storedEmbedding);
-  const isMatch = similarity > 0.73;
+  // const similarity = cosineSimilarity(embedding, storedEmbedding);
+  // const isMatch = similarity > 0.73;
+  const distance = euclideanDistance(embedding, storedEmbedding);
 
+  // العتبة القياسية (Threshold) لموديل FaceNet غالباً تكون بين 0.6 و 0.7
+  // لو المسافة أقل من 0.6 يبقى الشخص هو هو بنسبة كبيرة جداً
+  const isMatch = distance < 0.6;
   res.json({
     success: true,
     id: id,
     name: user.name, // حلوة نرجع الاسم كمان للتأكيد
-    similarity: similarity,
+    distance: distance,
     isMatch: isMatch,
   });
 });
 
 // دالة الـ Cosine Similarity
-function cosineSimilarity(vec1, vec2) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
+// function cosineSimilarity(vec1, vec2) {
+//   let dotProduct = 0;
+//   let normA = 0;
+//   let normB = 0;
 
-  for (let i = 0; i < vec1.length; i++) {
-    dotProduct += vec1[i] * vec2[i];
-    normA += vec1[i] * vec1[i];
-    normB += vec2[i] * vec2[i];
+//   for (let i = 0; i < vec1.length; i++) {
+//     dotProduct += vec1[i] * vec2[i];
+//     normA += vec1[i] * vec1[i];
+//     normB += vec2[i] * vec2[i];
+//   }
+
+//   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+// }
+function euclideanDistance(vec1, vec2) {
+  if (vec1.length !== vec2.length) {
+    throw new Error("المصفوفات مش بنفس الطول!");
   }
 
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  let sum = 0;
+  for (let i = 0; i < vec1.length; i++) {
+    let diff = vec1[i] - vec2[i];
+    sum += diff * diff;
+  }
+
+  return Math.sqrt(sum); // إرجاع المسافة الإقليدية
 }
 
 // تشغيل السيرفر (تم نقلها بره الـ API لآخر الملف)
