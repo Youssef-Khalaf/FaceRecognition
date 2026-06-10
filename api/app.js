@@ -115,6 +115,11 @@ function cosineSimilarity(vec1, vec2) {
 }
 
 // تشغيل السيرفر
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(3000, () => {
+    console.log("Server is running on port 3000");
+  });
+}
+
+// وتصدر الـ app عشان Vercel يشوفه
+module.exports = app;
